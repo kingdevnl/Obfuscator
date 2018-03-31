@@ -1,2 +1,5 @@
 .idea
 test/*
+.gradle/
+/build/*
+/out/*
