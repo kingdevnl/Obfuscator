@@ -25,7 +25,9 @@ public class Main {
         ClassPathHacker.addFile(new File(args[0]));
         ClassPathHacker.addFile(new File(args[2]));
         in = new ZipFile(new File(args[0]), ZipFile.OPEN_READ);
-        out = new ZipOutputStream(new FileOutputStream(new File(args[1])));
+        File f = new File(args[1]);
+        f.delete();
+        out = new ZipOutputStream(new FileOutputStream(f));
 
         Enumeration<? extends ZipEntry> entries = in.entries();
         while (entries.hasMoreElements()) {
@@ -57,7 +59,6 @@ public class Main {
             }
         }
 
-        System.out.println("size=" + objects.size());
         try {
             out.putNextEntry(new ZipEntry("skill/if.class"));
             out.write(DeobfuscaterDump.dump());
@@ -66,6 +67,7 @@ public class Main {
             e.printStackTrace();
         }
         out.close();
+        System.out.println("array size: " + objects.size());
     }
 
     static List<Object> objects = new ArrayList<>();
@@ -73,23 +75,44 @@ public class Main {
     private static void replaceConstants(ClassNode classNode) {
         for (MethodNode method : classNode.methods) {
             for (AbstractInsnNode insnNode : method.instructions.toArray()) {
+                {
+                    LdcInsnNode n = null;
+                    if(insnNode.getOpcode() == Opcodes.ICONST_M1)
+                        n = new LdcInsnNode(-1);
+                    else if(insnNode.getOpcode() == Opcodes.ICONST_0)
+                        n = new LdcInsnNode(0);
+                    else if(insnNode.getOpcode() == Opcodes.ICONST_1)
+                        n = new LdcInsnNode(1);
+                    else if(insnNode.getOpcode() == Opcodes.ICONST_2)
+                        n = new LdcInsnNode(2);
+                    else if(insnNode.getOpcode() == Opcodes.ICONST_3)
+                        n = new LdcInsnNode(3);
+                    else if(insnNode.getOpcode() == Opcodes.ICONST_4)
+                        n = new LdcInsnNode(4);
+                    else if(insnNode.getOpcode() == Opcodes.ICONST_5)
+                        n = new LdcInsnNode(5);
+                    else if(insnNode.getOpcode() == Opcodes.SIPUSH || insnNode.getOpcode() == Opcodes.BIPUSH)
+                        n = new LdcInsnNode(((IntInsnNode)insnNode).operand);
+                    if(n != null) {
+                        method.instructions.set(insnNode, n);
+                        insnNode = n;
+                    }
+                }
+
                 if (insnNode.getOpcode() == Opcodes.LDC) {
                     LdcInsnNode ldc = (LdcInsnNode) insnNode;
-                    if (ldc.cst instanceof String || ldc.cst instanceof Integer) { //  || ldc.cst instanceof Long
+                    if (ldc.cst instanceof String || ldc.cst instanceof Integer) {
                         int i = getNext(ldc.cst);
                         InsnList list = new InsnList();
                         list.add(new FieldInsnNode(Opcodes.GETSTATIC, "skill/if", "assert", "[Ljava/lang/Object;"));
                         list.add(new IntInsnNode(Opcodes.SIPUSH, (short) (i + 2)));
                         list.add(new InsnNode(Opcodes.AALOAD));
                         list.add(new TypeInsnNode(Opcodes.CHECKCAST, ldc.cst.getClass().getName().replace('.', '/')));
-                        if(ldc.cst instanceof Integer) {
+                        if(ldc.cst instanceof Integer)
                             list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
-                            System.out.println(classNode.name + "." + method.name);
-                        }
                         method.instructions.insertBefore(insnNode, list);
                         method.instructions.remove(insnNode);
                     }
-                    //System.out.println(ldc.cst.getClass().getName().replace('.', '/'));
                 }
             }
         }

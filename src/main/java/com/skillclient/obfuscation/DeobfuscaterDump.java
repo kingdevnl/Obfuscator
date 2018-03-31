@@ -134,18 +134,18 @@ public class DeobfuscaterDump implements Opcodes {
                 Object o = Main.objects.get(i);
                 if(o instanceof String) {
                     mv.visitLdcInsn(enc.encodeToString(cipher.doFinal(((String)o).getBytes())));
-                    mv.visitMethodInsn(INVOKESTATIC, "skill/if", "decomp", "(Ljava/lang/String;)Ljava/lang/String;", false);
+                    mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(Ljava/lang/String;)Ljava/lang/String;", false);
                 } else if(o instanceof Integer) {
-                    int r = random.nextInt();
-                    mv.visitLdcInsn(((int)o) ^ r);
-                    mv.visitLdcInsn(r);
-                    mv.visitInsn(IXOR);
+                    short a = (short) (random.nextInt(256) + 256);
+                    int b = random.nextInt(Integer.MAX_VALUE/2) + Integer.MAX_VALUE/4;
+                    int c = random.nextInt(Integer.MAX_VALUE/2) + Integer.MAX_VALUE/4;
+
+                    mv.visitIntInsn(SIPUSH, a);
+                    mv.visitLdcInsn(b);
+                    mv.visitLdcInsn(c);
+                    mv.visitLdcInsn(calc(a, b, c, (int) o));
+                    mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(IIII)I", false);
                     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
-                    //} else if(o instanceof Long) {
-                //    long r = random.nextLong();
-                //    mv.visitLdcInsn(((long)o) ^ r);
-                //    mv.visitLdcInsn(r);
-                //    mv.visitInsn(LXOR);
                 } else {
                     mv.visitLdcInsn(o);
                     System.out.println(o.getClass() + " " + o);
@@ -159,7 +159,7 @@ public class DeobfuscaterDump implements Opcodes {
             mv.visitEnd();
         }
         {
-            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "decomp", "(Ljava/lang/String;)Ljava/lang/String;", null, null);
+            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "a", "(Ljava/lang/String;)Ljava/lang/String;", null, null);
             mv.visitCode();
             Label l0 = new Label();
             Label l1 = new Label();
@@ -179,9 +179,78 @@ public class DeobfuscaterDump implements Opcodes {
             mv.visitMaxs(5, 1);
             mv.visitEnd();
         }
+        {
+            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "a", "(IIII)I", null, null);
+            mv.visitCode();
+            Label l0 = new Label();
+            mv.visitLabel(l0);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitVarInsn(ILOAD, 0);
+            mv.visitVarInsn(ILOAD, 0);
+            mv.visitInsn(IMUL);
+            mv.visitInsn(IMUL);
+            mv.visitVarInsn(ISTORE, 1);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitVarInsn(ILOAD, 0);
+            mv.visitInsn(ISUB);
+            mv.visitVarInsn(ISTORE, 1);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitInsn(ICONST_2);
+            mv.visitInsn(IUSHR);
+            mv.visitVarInsn(ISTORE, 1);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitInsn(I2L);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitInsn(I2L);
+            mv.visitInsn(LMUL);
+            mv.visitInsn(L2I);
+            mv.visitVarInsn(ILOAD, 2);
+            mv.visitInsn(IREM);
+            mv.visitVarInsn(ISTORE, 1);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitInsn(I2L);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitInsn(I2L);
+            mv.visitInsn(LMUL);
+            mv.visitInsn(L2I);
+            mv.visitVarInsn(ILOAD, 2);
+            mv.visitInsn(IREM);
+            mv.visitVarInsn(ISTORE, 1);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitInsn(I2L);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitInsn(I2L);
+            mv.visitInsn(LMUL);
+            mv.visitInsn(L2I);
+            mv.visitVarInsn(ILOAD, 2);
+            mv.visitInsn(IREM);
+            mv.visitVarInsn(ISTORE, 1);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitVarInsn(ILOAD, 3);
+            mv.visitInsn(IXOR);
+            mv.visitInsn(IRETURN);
+            Label l7 = new Label();
+            mv.visitLabel(l7);
+            mv.visitLocalVariable("a", "I", null, l0, l7, 0);
+            mv.visitLocalVariable("b", "I", null, l0, l7, 1);
+            mv.visitLocalVariable("c", "I", null, l0, l7, 2);
+            mv.visitLocalVariable("d", "I", null, l0, l7, 3);
+            mv.visitMaxs(4, 4);
+            mv.visitEnd();
+        }
 
         cw.visitEnd();
 
         return cw.toByteArray();
+    }
+
+    public static int calc(int a, int b, int c, int i) {
+        b *= a*a;
+        b -= a;
+        b >>>= 2;
+        b = (int) ((long)b*b) % c;
+        b = (int) ((long)b*b) % c;
+        b = (int) ((long)b*b) % c;
+        return b^i;
     }
 }
