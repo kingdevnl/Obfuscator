@@ -1,5 +1,6 @@
 package com.skillclient.obfuscation;
 
+import jdk.internal.org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -40,7 +41,9 @@ public class Main {
                 ClassReader classReader = new ClassReader(data);
                 classReader.accept(classNode, 0);
 
+                optimizeCheck(classNode);
                 replaceConstants(classNode);
+                optimizeCheck(classNode);
                 addClientSide(classNode);
 
                 try {
@@ -125,6 +128,38 @@ public class Main {
             i = objects.indexOf(o);
         }
         return i;
+    }
+
+    /**
+     * There's no optimization, as Proguard should do this. Still added a Check in case something goes wrong.
+     * @param classNode
+     */
+    private static void optimizeCheck(ClassNode classNode) {
+        for (MethodNode method : classNode.methods) {
+            for(AbstractInsnNode node:method.instructions.toArray()) {
+                if (node instanceof LineNumberNode)
+                    System.out.println("LineNumberNode " + ((LineNumberNode) node).line + " at " + classNode.name + "." + method.name + method.desc);
+                else if(node.getOpcode() == Opcodes.NOP)
+                    System.out.println("NOP at " + classNode.name + "." + method.name + method.desc);
+            }
+            AbstractInsnNode[] aina = method.instructions.toArray();
+            for(int i = aina.length-1; i > 0; i--) {
+                AbstractInsnNode a = aina[i-1];
+                AbstractInsnNode b = aina[i];
+                if(a.getOpcode() == b.getOpcode()) {
+                    if(a instanceof VarInsnNode && ((VarInsnNode) a).var == ((VarInsnNode) b).var)
+                        System.out.println(Textifier.OPCODES[a.getOpcode()] + " " + ((VarInsnNode) a).var + " " + ((VarInsnNode) b).var + " at " + classNode.name + "." +  method.name + method.desc);
+                    else if(a instanceof FieldInsnNode && ((FieldInsnNode) a).owner.equals(((FieldInsnNode) b).owner) && ((FieldInsnNode) a).name.equals(((FieldInsnNode) b).name) && ((FieldInsnNode) a).desc.equals(((FieldInsnNode) b).desc))
+                        System.out.println(Textifier.OPCODES[a.getOpcode()] + " " + ((FieldInsnNode) a).owner + " " + ((FieldInsnNode) a).name + ((FieldInsnNode) a).desc + " at " + classNode.name + "." +  method.name + method.desc);
+                    else if(a.getOpcode() == Opcodes.POP)
+                        System.out.println("POP POP != POP2 at " + classNode.name + "." +  method.name + method.desc);
+                }
+            }
+            for(int i = aina.length-1; i > 1; i--) {
+                if(aina[i].getOpcode() == Opcodes.DUP && aina[i-1].getOpcode() == Opcodes.DUP && aina[i-2].getOpcode() == Opcodes.DUP)
+                    System.out.println("DUP DUP DUP != DUP DUP2 at " + classNode.name + "." +  method.name + method.desc);
+            }
+        }
     }
 
     /**
