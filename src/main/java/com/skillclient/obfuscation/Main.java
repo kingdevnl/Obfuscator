@@ -1,10 +1,10 @@
 package com.skillclient.obfuscation;
 
-import jdk.internal.org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
+import org.objectweb.asm.util.Textifier;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -96,6 +96,12 @@ public class Main {
                         n = new LdcInsnNode(5);
                     else if(insnNode.getOpcode() == Opcodes.SIPUSH || insnNode.getOpcode() == Opcodes.BIPUSH)
                         n = new LdcInsnNode(((IntInsnNode)insnNode).operand);
+                    else if (insnNode.getOpcode() == Opcodes.FCONST_0)
+                        n = new LdcInsnNode(0.0f);
+                    else if (insnNode.getOpcode() == Opcodes.FCONST_1)
+                        n = new LdcInsnNode(1.0f);
+                    else if (insnNode.getOpcode() == Opcodes.FCONST_2)
+                        n = new LdcInsnNode(2.0f);
                     if(n != null) {
                         method.instructions.set(insnNode, n);
                         insnNode = n;
@@ -104,7 +110,7 @@ public class Main {
 
                 if (insnNode.getOpcode() == Opcodes.LDC) {
                     LdcInsnNode ldc = (LdcInsnNode) insnNode;
-                    if (ldc.cst instanceof String || ldc.cst instanceof Integer) {
+                    if (ldc.cst instanceof String || ldc.cst instanceof Integer || ldc.cst instanceof Float) {
                         int i = getNext(ldc.cst);
                         InsnList list = new InsnList();
                         list.add(new FieldInsnNode(Opcodes.GETSTATIC, "skill/if", "assert", "[Ljava/lang/Object;"));
@@ -113,6 +119,8 @@ public class Main {
                         list.add(new TypeInsnNode(Opcodes.CHECKCAST, ldc.cst.getClass().getName().replace('.', '/')));
                         if(ldc.cst instanceof Integer)
                             list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
+                        else if (ldc.cst instanceof Float)
+                            list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
                         method.instructions.insertBefore(insnNode, list);
                         method.instructions.remove(insnNode);
                     }

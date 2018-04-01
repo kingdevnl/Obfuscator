@@ -4,7 +4,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.TypeInsnNode;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -143,9 +142,19 @@ public class DeobfuscaterDump implements Opcodes {
                     mv.visitIntInsn(SIPUSH, a);
                     mv.visitLdcInsn(b);
                     mv.visitLdcInsn(c);
-                    mv.visitLdcInsn(calc(a, b, c, (int) o));
+                    mv.visitLdcInsn(calcI(a, b, c, (int) o));
                     mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(IIJI)I", false);
                     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+                } else if (o instanceof Float) {
+                    short a = (short) (random.nextInt(256) + 256);
+                    int b = random.nextInt(Integer.MAX_VALUE / 2) + Integer.MAX_VALUE / 4;
+                    long c = random.nextInt(Integer.MAX_VALUE / 2) + Integer.MAX_VALUE / 4;
+                    mv.visitIntInsn(SIPUSH, a);
+                    mv.visitLdcInsn(b);
+                    mv.visitLdcInsn(c);
+                    mv.visitLdcInsn(calcF(a, b, c, (float) o));
+                    mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(IIJI)F", false);
+                    mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
                 } else {
                     mv.visitLdcInsn(o);
                     System.out.println(o.getClass() + " " + o);
@@ -219,16 +228,44 @@ public class DeobfuscaterDump implements Opcodes {
             mv.visitMaxs(4, 5);
             mv.visitEnd();
         }
+        {
+            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "a", "(IIJI)F", null, null);
+            mv.visitCode();
+            Label l0 = new Label();
+            Label l1 = new Label();
+            mv.visitLabel(l0);
+            mv.visitVarInsn(ILOAD, 0);
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitVarInsn(LLOAD, 2);
+            mv.visitVarInsn(ILOAD, 4);
+            mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(IIJI)I", false);
+            mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "intBitsToFloat", "(I)F", false);
+            mv.visitInsn(FRETURN);
+            mv.visitLabel(l1);
+            mv.visitLocalVariable("a", "I", null, l0, l1, 0);
+            mv.visitLocalVariable("b", "I", null, l0, l1, 1);
+            mv.visitLocalVariable("c", "J", null, l0, l1, 2);
+            mv.visitLocalVariable("d", "I", null, l0, l1, 4);
+            mv.visitMaxs(5, 5);
+            mv.visitEnd();
+        }
 
         cw.visitEnd();
 
         return cw.toByteArray();
     }
 
-    public static int calc(final int a, int b, final long c, int i) {
+    public static int calcI(final int a, int b, final long c, int i) {
         final long n = b * (a * a) - a >>> 2;
         final long n2 = (n * n) % c;
         final long n3 = (n2 * n2) % c;
         return (int)((n3 * n3) % c) ^ i;
+    }
+
+    public static int calcF(int a, int b, long c, float d) {
+        final long n = b * (a * a) - a >>> 2;
+        final long n2 = n * n % c;
+        final long n3 = n2 * n2 % c;
+        return (int) (n3 * n3 % c) ^ Float.floatToIntBits(d);
     }
 }
