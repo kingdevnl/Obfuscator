@@ -137,10 +137,13 @@ public class Main {
     private static void optimizeCheck(ClassNode classNode) {
         for (MethodNode method : classNode.methods) {
             for(AbstractInsnNode node:method.instructions.toArray()) {
+                int i = node.getOpcode();
                 if (node instanceof LineNumberNode)
                     System.out.println("LineNumberNode " + ((LineNumberNode) node).line + " at " + classNode.name + "." + method.name + method.desc);
-                else if(node.getOpcode() == Opcodes.NOP)
+                else if (i == Opcodes.NOP)
                     System.out.println("NOP at " + classNode.name + "." + method.name + method.desc);
+                if ((i >= 26 && i <= 45) || (i >= 59 && i <= 78))
+                    System.out.println("*LOAD_N / *STORE_N : " + i + " at " + classNode.name + "." + method.name + method.desc);
             }
             AbstractInsnNode[] aina = method.instructions.toArray();
             for(int i = aina.length-1; i > 0; i--) {
