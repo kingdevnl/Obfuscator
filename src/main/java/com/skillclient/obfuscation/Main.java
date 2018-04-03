@@ -8,6 +8,7 @@ import org.objectweb.asm.util.Textifier;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -44,7 +45,7 @@ public class Main {
                 optimizeCheck(classNode);
                 replaceConstants(classNode);
                 optimizeCheck(classNode);
-                addClientSide(classNode);
+                annotations(classNode);
 
                 try {
                     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
@@ -80,29 +81,29 @@ public class Main {
             for (AbstractInsnNode insnNode : method.instructions.toArray()) {
                 {
                     LdcInsnNode n = null;
-                    if(insnNode.getOpcode() == Opcodes.ICONST_M1)
+                    if (insnNode.getOpcode() == Opcodes.ICONST_M1)
                         n = new LdcInsnNode(-1);
-                    else if(insnNode.getOpcode() == Opcodes.ICONST_0)
+                    else if (insnNode.getOpcode() == Opcodes.ICONST_0)
                         n = new LdcInsnNode(0);
-                    else if(insnNode.getOpcode() == Opcodes.ICONST_1)
+                    else if (insnNode.getOpcode() == Opcodes.ICONST_1)
                         n = new LdcInsnNode(1);
-                    else if(insnNode.getOpcode() == Opcodes.ICONST_2)
+                    else if (insnNode.getOpcode() == Opcodes.ICONST_2)
                         n = new LdcInsnNode(2);
-                    else if(insnNode.getOpcode() == Opcodes.ICONST_3)
+                    else if (insnNode.getOpcode() == Opcodes.ICONST_3)
                         n = new LdcInsnNode(3);
-                    else if(insnNode.getOpcode() == Opcodes.ICONST_4)
+                    else if (insnNode.getOpcode() == Opcodes.ICONST_4)
                         n = new LdcInsnNode(4);
-                    else if(insnNode.getOpcode() == Opcodes.ICONST_5)
+                    else if (insnNode.getOpcode() == Opcodes.ICONST_5)
                         n = new LdcInsnNode(5);
-                    else if(insnNode.getOpcode() == Opcodes.SIPUSH || insnNode.getOpcode() == Opcodes.BIPUSH)
-                        n = new LdcInsnNode(((IntInsnNode)insnNode).operand);
+                    else if (insnNode.getOpcode() == Opcodes.SIPUSH || insnNode.getOpcode() == Opcodes.BIPUSH)
+                        n = new LdcInsnNode(((IntInsnNode) insnNode).operand);
                     else if (insnNode.getOpcode() == Opcodes.FCONST_0)
                         n = new LdcInsnNode(0.0f);
                     else if (insnNode.getOpcode() == Opcodes.FCONST_1)
                         n = new LdcInsnNode(1.0f);
                     else if (insnNode.getOpcode() == Opcodes.FCONST_2)
                         n = new LdcInsnNode(2.0f);
-                    if(n != null) {
+                    if (n != null) {
                         method.instructions.set(insnNode, n);
                         insnNode = n;
                     }
@@ -117,7 +118,7 @@ public class Main {
                         list.add(new IntInsnNode(Opcodes.SIPUSH, (short) (i + 2)));
                         list.add(new InsnNode(Opcodes.AALOAD));
                         list.add(new TypeInsnNode(Opcodes.CHECKCAST, ldc.cst.getClass().getName().replace('.', '/')));
-                        if(ldc.cst instanceof Integer)
+                        if (ldc.cst instanceof Integer)
                             list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
                         else if (ldc.cst instanceof Float)
                             list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
@@ -140,11 +141,12 @@ public class Main {
 
     /**
      * There's no optimization, as Proguard should do this. Still added a Check in case something goes wrong.
+     *
      * @param classNode
      */
     private static void optimizeCheck(ClassNode classNode) {
         for (MethodNode method : classNode.methods) {
-            for(AbstractInsnNode node:method.instructions.toArray()) {
+            for (AbstractInsnNode node : method.instructions.toArray()) {
                 int i = node.getOpcode();
                 if (node instanceof LineNumberNode)
                     System.out.println("LineNumberNode " + ((LineNumberNode) node).line + " at " + classNode.name + "." + method.name + method.desc);
@@ -154,50 +156,98 @@ public class Main {
                     System.out.println("*LOAD_N / *STORE_N : " + i + " at " + classNode.name + "." + method.name + method.desc);
             }
             AbstractInsnNode[] aina = method.instructions.toArray();
-            for(int i = aina.length-1; i > 0; i--) {
-                AbstractInsnNode a = aina[i-1];
+            for (int i = aina.length - 1; i > 0; i--) {
+                AbstractInsnNode a = aina[i - 1];
                 AbstractInsnNode b = aina[i];
-                if(a.getOpcode() == b.getOpcode()) {
-                    if(a instanceof VarInsnNode && ((VarInsnNode) a).var == ((VarInsnNode) b).var)
-                        System.out.println(Textifier.OPCODES[a.getOpcode()] + " " + ((VarInsnNode) a).var + " " + ((VarInsnNode) b).var + " at " + classNode.name + "." +  method.name + method.desc);
-                    else if(a instanceof FieldInsnNode && ((FieldInsnNode) a).owner.equals(((FieldInsnNode) b).owner) && ((FieldInsnNode) a).name.equals(((FieldInsnNode) b).name) && ((FieldInsnNode) a).desc.equals(((FieldInsnNode) b).desc))
-                        System.out.println(Textifier.OPCODES[a.getOpcode()] + " " + ((FieldInsnNode) a).owner + " " + ((FieldInsnNode) a).name + ((FieldInsnNode) a).desc + " at " + classNode.name + "." +  method.name + method.desc);
-                    else if(a.getOpcode() == Opcodes.POP)
-                        System.out.println("POP POP != POP2 at " + classNode.name + "." +  method.name + method.desc);
+                if (a.getOpcode() == b.getOpcode()) {
+                    if (a instanceof VarInsnNode && ((VarInsnNode) a).var == ((VarInsnNode) b).var)
+                        System.out.println(Textifier.OPCODES[a.getOpcode()] + " " + ((VarInsnNode) a).var + " " + ((VarInsnNode) b).var + " at " + classNode.name + "." + method.name + method.desc);
+                    else if (a instanceof FieldInsnNode && ((FieldInsnNode) a).owner.equals(((FieldInsnNode) b).owner) && ((FieldInsnNode) a).name.equals(((FieldInsnNode) b).name) && ((FieldInsnNode) a).desc.equals(((FieldInsnNode) b).desc))
+                        System.out.println(Textifier.OPCODES[a.getOpcode()] + " " + ((FieldInsnNode) a).owner + " " + ((FieldInsnNode) a).name + ((FieldInsnNode) a).desc + " at " + classNode.name + "." + method.name + method.desc);
+                    else if (a.getOpcode() == Opcodes.POP)
+                        System.out.println("POP POP != POP2 at " + classNode.name + "." + method.name + method.desc);
                 }
             }
-            for(int i = aina.length-1; i > 1; i--) {
-                if(aina[i].getOpcode() == Opcodes.DUP && aina[i-1].getOpcode() == Opcodes.DUP && aina[i-2].getOpcode() == Opcodes.DUP)
-                    System.out.println("DUP DUP DUP != DUP DUP2 at " + classNode.name + "." +  method.name + method.desc);
+            for (int i = aina.length - 1; i > 1; i--) {
+                if (aina[i].getOpcode() == Opcodes.DUP && aina[i - 1].getOpcode() == Opcodes.DUP && aina[i - 2].getOpcode() == Opcodes.DUP)
+                    System.out.println("DUP DUP DUP != DUP DUP2 at " + classNode.name + "." + method.name + method.desc);
             }
         }
     }
 
     /**
      * add the Annotation @SideOnly(Side.CLIENT) to all classes
+     *
      * @param classNode
      */
-    private static void addClientSide(ClassNode classNode) {
+    private static void annotations(ClassNode classNode) {
         if (classNode.visibleAnnotations == null) {
             classNode.visibleAnnotations = new ArrayList<>();
             AnnotationNode node = new AnnotationNode("Lnet/minecraftforge/fml/relauncher/SideOnly;");
             node.values = new ArrayList<>();
             node.values.add("value");
-            node.values.add(new String[] {"Lnet/minecraftforge/fml/relauncher/Side;", "CLIENT"});
+            node.values.add(new String[]{"Lnet/minecraftforge/fml/relauncher/Side;", "CLIENT"});
             classNode.visibleAnnotations.add(node);
         } else {
             boolean hasSideOnly = false;
             for (AnnotationNode node : classNode.visibleAnnotations) {
-                if(node.desc.equals("Lnet/minecraftforge/fml/relauncher/SideOnly;"))
+                if (node.desc.equals("Lnet/minecraftforge/fml/relauncher/SideOnly;"))
                     hasSideOnly = true;
             }
-            if(!hasSideOnly) {
+            if (!hasSideOnly) {
                 AnnotationNode node = new AnnotationNode("Lnet/minecraftforge/fml/relauncher/SideOnly;");
                 node.values = new ArrayList<>();
                 node.values.add("value");
-                node.values.add(new String[] {"Lnet/minecraftforge/fml/relauncher/Side;", "CLIENT"});
+                node.values.add(new String[]{"Lnet/minecraftforge/fml/relauncher/Side;", "CLIENT"});
                 classNode.visibleAnnotations.add(node);
             }
+        }
+        check(classNode, classNode.visibleAnnotations);
+        check(classNode, classNode.invisibleAnnotations);
+        check(classNode, classNode.visibleTypeAnnotations);
+        check(classNode, classNode.invisibleTypeAnnotations);
+
+        for (MethodNode method : classNode.methods) {
+            check(classNode, method.visibleAnnotations);
+            check(classNode, method.invisibleAnnotations);
+            check(classNode, method.visibleTypeAnnotations);
+            check(classNode, method.invisibleTypeAnnotations);
+            check(classNode, method.visibleLocalVariableAnnotations);
+            check(classNode, method.invisibleLocalVariableAnnotations);
+            if (method.visibleParameterAnnotations != null)
+                for (List<AnnotationNode> la : method.visibleParameterAnnotations)
+                    check(classNode, la);
+            if (method.invisibleParameterAnnotations != null)
+                for (List<AnnotationNode> la : method.invisibleParameterAnnotations)
+                    check(classNode, la);
+            for (AbstractInsnNode ins : method.instructions.toArray()) {
+                check(classNode, ins.visibleTypeAnnotations);
+                check(classNode, ins.invisibleTypeAnnotations);
+            }
+        }
+        for (FieldNode field : classNode.fields) {
+            check(classNode, field.visibleAnnotations);
+            check(classNode, field.invisibleAnnotations);
+            check(classNode, field.visibleTypeAnnotations);
+            check(classNode, field.invisibleTypeAnnotations);
+        }
+    }
+
+    static List<String> removeAnnotations = Arrays.asList("Ljava/lang/FunctionalInterface;", "Ljava/lang/annotation/Documented;", "Ljava/lang/annotation/Target;", "Ljava/lang/annotation/Retention;", "Ljavax/annotation/Nullable;");
+
+    static void check(ClassNode classNode, List<? extends AnnotationNode> list) {
+        if (list != null) {
+            List<AnnotationNode> remove = new ArrayList<>();
+            for (AnnotationNode annotation : list) {
+                if (annotation.desc.equals("Lnet/minecraftforge/fml/relauncher/SideOnly;") || annotation.desc.startsWith("Lnet/minecraftforge/fml/relauncher/IFMLLoadingPlugin") || annotation.desc.startsWith("Lskill/") || annotation.desc.equals("Lnet/minecraftforge/fml/common/eventhandler/SubscribeEvent;") || annotation.desc.equals("Lcom/google/common/eventbus/Subscribe;")) {
+                } else if (removeAnnotations.contains(annotation.desc)) {
+                    System.out.println("removed: " + annotation.desc + " from " + classNode.name);
+                    remove.add(annotation);
+                } else {
+                    System.out.println("found: " + annotation.desc + " from " + classNode.name);
+                }
+            }
+            list.removeAll(remove);
         }
     }
 
