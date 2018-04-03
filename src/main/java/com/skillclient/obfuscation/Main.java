@@ -44,6 +44,7 @@ public class Main {
                 annotations(classNode);
                 flow(classNode);
                 optimizeCheck(classNode);
+                randomShit(classNode);
 
                 try {
                     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
@@ -70,6 +71,35 @@ public class Main {
         }
         out.close();
         System.out.println("array size: " + objects.size());
+    }
+
+    private static void randomShit(ClassNode classNode) {
+        for (MethodNode method : classNode.methods) {
+            for (AbstractInsnNode insnNode : method.instructions.toArray()) {
+                if (RANDOM.nextInt(12) == 0)
+                    method.instructions.insertBefore(insnNode, new InsnNode(Opcodes.NOP));
+                if (insnNode.getOpcode() == Opcodes.ARETURN) {
+                    LabelNode label = new LabelNode();
+                    InsnList list = new InsnList();
+                    list.add(new InsnNode(Opcodes.DUP));
+                    list.add(new JumpInsnNode(Opcodes.IFNULL, label));
+                    list.add(new InsnNode(Opcodes.DUP));
+                    list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Object", "hashCode", "()I", false));
+                    int f = RANDOM.nextInt(objects.size());
+                    while (!(objects.get(f) instanceof Integer))
+                        f = RANDOM.nextInt(objects.size());
+                    list.add(new FieldInsnNode(Opcodes.GETSTATIC, "skill/if", "assert", "[Ljava/lang/Object;"));
+                    list.add(new IntInsnNode(Opcodes.SIPUSH, f + 2));
+                    list.add(new InsnNode(Opcodes.AALOAD));
+                    list.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Integer"));
+                    list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
+                    list.add(new InsnNode(Opcodes.IAND));
+                    list.add(new InsnNode(Opcodes.POP));
+                    list.add(label);
+                    method.instructions.insertBefore(insnNode, list);
+                }
+            }
+        }
     }
 
     private static void flow(ClassNode classNode) {
