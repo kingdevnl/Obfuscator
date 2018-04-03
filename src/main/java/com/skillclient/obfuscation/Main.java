@@ -7,10 +7,7 @@ import org.objectweb.asm.tree.*;
 import org.objectweb.asm.util.Textifier;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -18,6 +15,7 @@ import java.util.zip.ZipOutputStream;
 public class Main {
     static ZipFile in;
     static ZipOutputStream out;
+    static Random RANDOM = new Random();
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
@@ -42,10 +40,10 @@ public class Main {
                 ClassReader classReader = new ClassReader(data);
                 classReader.accept(classNode, 0);
 
-                optimizeCheck(classNode);
                 replaceConstants(classNode);
-                optimizeCheck(classNode);
                 annotations(classNode);
+                flow(classNode);
+                optimizeCheck(classNode);
 
                 try {
                     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
@@ -72,6 +70,40 @@ public class Main {
         }
         out.close();
         System.out.println("array size: " + objects.size());
+    }
+
+    private static void flow(ClassNode classNode) {
+        for (MethodNode method : classNode.methods) {
+            for (AbstractInsnNode insnNode : method.instructions.toArray()) {
+                if (insnNode instanceof LabelNode) {
+                    InsnList list = new InsnList();
+
+                    if (RANDOM.nextBoolean()) {
+                        list.add(new FieldInsnNode(Opcodes.GETSTATIC, "skill/if", "assert", "[Ljava/lang/Object;"));
+                        list.add(new IntInsnNode(Opcodes.SIPUSH, RANDOM.nextInt(objects.size())));
+                        list.add(new InsnNode(Opcodes.AALOAD));
+                        list.add(new JumpInsnNode(Opcodes.IFNULL, (LabelNode) insnNode));
+                    } else {
+                        int f = RANDOM.nextInt(objects.size());
+                        while (!(objects.get(f) instanceof Integer))
+                            f = RANDOM.nextInt(objects.size());
+                        list.add(new FieldInsnNode(Opcodes.GETSTATIC, "skill/if", "assert", "[Ljava/lang/Object;"));
+                        list.add(new IntInsnNode(Opcodes.SIPUSH, f + 2));
+                        list.add(new InsnNode(Opcodes.AALOAD));
+                        list.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Integer"));
+                        list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
+                        int s = RANDOM.nextInt(Short.MAX_VALUE);
+                        list.add(new IntInsnNode(Opcodes.SIPUSH, s));
+                        list.add(new JumpInsnNode((int) objects.get(f) > s ? Opcodes.IF_ICMPLT : Opcodes.IF_ICMPGT, (LabelNode) insnNode));
+                    }
+
+                    if (RANDOM.nextBoolean())
+                        method.instructions.insert(insnNode, list);
+                    else
+                        method.instructions.insertBefore(insnNode, list);
+                }
+            }
+        }
     }
 
     static List<Object> objects = new ArrayList<>();
