@@ -295,7 +295,7 @@ public class Main {
         }
     }
 
-    static List<String> removeAnnotations = Arrays.asList("Ljava/lang/FunctionalInterface;", "Ljava/lang/annotation/Documented;", "Ljava/lang/annotation/Target;", "Ljava/lang/annotation/Retention;", "Ljavax/annotation/Nullable;");
+    static List<String> removeAnnotations = Arrays.asList("Ljava/lang/FunctionalInterface;", "Ljavax/annotation/Nullable;");
 
     static void check(ClassNode classNode, List<? extends AnnotationNode> list) {
         if (list != null) {
