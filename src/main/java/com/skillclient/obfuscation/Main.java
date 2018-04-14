@@ -45,9 +45,8 @@ public class Main {
 
                 replaceConstants(classNode);
                 annotations(classNode);
-                flow(classNode);
                 optimizeCheck(classNode);
-                randomShit(classNode);
+                flow(classNode);
 
                 try {
                     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
