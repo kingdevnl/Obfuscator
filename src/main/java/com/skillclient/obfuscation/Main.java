@@ -7,7 +7,10 @@ import org.objectweb.asm.tree.*;
 import org.objectweb.asm.util.Textifier;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -73,11 +76,13 @@ public class Main {
         System.out.println("array size: " + objects.size());
     }
 
-    private static void randomShit(ClassNode classNode) {
+    private static void flow(ClassNode classNode) {
         for (MethodNode method : classNode.methods) {
             for (AbstractInsnNode insnNode : method.instructions.toArray()) {
-                if (RANDOM.nextInt(12) == 0)
+                // NOP
+                if (RANDOM.nextInt(144) == 0)
                     method.instructions.insertBefore(insnNode, new InsnNode(Opcodes.NOP));
+                // final int n = a.hashCode() & (int)if.assert[747];
                 if (insnNode.getOpcode() == Opcodes.ARETURN) {
                     LabelNode label = new LabelNode();
                     InsnList list = new InsnList();
@@ -98,22 +103,17 @@ public class Main {
                     list.add(label);
                     method.instructions.insertBefore(insnNode, list);
                 }
-            }
-        }
-    }
-
-    private static void flow(ClassNode classNode) {
-        for (MethodNode method : classNode.methods) {
-            for (AbstractInsnNode insnNode : method.instructions.toArray()) {
                 if (insnNode instanceof LabelNode) {
                     InsnList list = new InsnList();
 
                     if (RANDOM.nextBoolean()) {
+                        // if.assert[959] == null
                         list.add(new FieldInsnNode(Opcodes.GETSTATIC, "skill/if", "assert", "[Ljava/lang/Object;"));
                         list.add(new IntInsnNode(Opcodes.SIPUSH, RANDOM.nextInt(objects.size())));
                         list.add(new InsnNode(Opcodes.AALOAD));
                         list.add(new JumpInsnNode(Opcodes.IFNULL, (LabelNode) insnNode));
                     } else {
+                        // (int)if.assert[41] > 31136
                         int f = RANDOM.nextInt(objects.size());
                         while (!(objects.get(f) instanceof Integer))
                             f = RANDOM.nextInt(objects.size());
@@ -127,6 +127,7 @@ public class Main {
                         list.add(new JumpInsnNode((int) objects.get(f) > s ? Opcodes.IF_ICMPLT : Opcodes.IF_ICMPGT, (LabelNode) insnNode));
                     }
 
+                    // while () {} OR  if (!) {}
                     if (RANDOM.nextBoolean())
                         method.instructions.insert(insnNode, list);
                     else
@@ -295,14 +296,12 @@ public class Main {
         }
     }
 
-    static List<String> removeAnnotations = Arrays.asList("Ljava/lang/FunctionalInterface;", "Ljavax/annotation/Nullable;");
-
     static void check(ClassNode classNode, List<? extends AnnotationNode> list) {
         if (list != null) {
             List<AnnotationNode> remove = new ArrayList<>();
             for (AnnotationNode annotation : list) {
-                if (annotation.desc.equals("Lnet/minecraftforge/fml/relauncher/SideOnly;") || annotation.desc.startsWith("Lnet/minecraftforge/fml/relauncher/IFMLLoadingPlugin") || annotation.desc.startsWith("Lskill/") || annotation.desc.equals("Lnet/minecraftforge/fml/common/eventhandler/SubscribeEvent;") || annotation.desc.equals("Lcom/google/common/eventbus/Subscribe;")) {
-                } else if (removeAnnotations.contains(annotation.desc)) {
+                if (annotation.desc.equals("Lnet/minecraftforge/fml/relauncher/SideOnly;") || annotation.desc.startsWith("Lnet/minecraftforge/fml/relauncher/IFMLLoadingPlugin") || annotation.desc.startsWith("Lskill/") || annotation.desc.equals("Lnet/minecraftforge/fml/common/eventhandler/SubscribeEvent;") || annotation.desc.equals("Lcom/google/common/eventbus/Subscribe;") || annotation.desc.equals("Ljava/lang/annotation/Retention;") || annotation.desc.equals("Ljava/lang/annotation/Target;") || annotation.desc.equals("Ljava/lang/annotation/Documented;")) {
+                } else if (annotation.desc.equals("Ljava/lang/FunctionalInterface;") || annotation.desc.equals("Ljavax/annotation/Nullable;")) {
                     System.out.println("removed: " + annotation.desc + " from " + classNode.name);
                     remove.add(annotation);
                 } else {
