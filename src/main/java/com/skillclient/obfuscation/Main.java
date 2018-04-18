@@ -46,6 +46,7 @@ public class Main {
 
                 replaceConstants(classNode);
                 annotations(classNode);
+                accessCodes(classNode);
                 optimizeCheck(classNode);
                 flow(classNode);
 
@@ -310,6 +311,21 @@ public class Main {
             check(classNode, field.visibleTypeAnnotations);
             check(classNode, field.invisibleTypeAnnotations);
         }
+    }
+
+    public static void accessCodes(ClassNode classNode) {
+        classNode.access |= Opcodes.ACC_SYNTHETIC;
+
+        for (MethodNode method : classNode.methods) {
+            method.access &= ~Opcodes.ACC_VARARGS;
+            if ((Opcodes.ACC_STATIC & method.access) != 0)
+                method.access |= Opcodes.ACC_SYNTHETIC;
+            if (method.parameters != null)
+                for (ParameterNode pn : method.parameters)
+                    pn.access |= Opcodes.ACC_SYNTHETIC;
+        }
+        for (FieldNode field : classNode.fields)
+            field.access |= Opcodes.ACC_SYNTHETIC;
     }
 
     static void check(ClassNode classNode, List<? extends AnnotationNode> list) {
