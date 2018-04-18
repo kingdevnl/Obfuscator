@@ -19,7 +19,7 @@ import java.util.zip.ZipOutputStream;
 public class Main {
     static ZipFile in;
     static ZipOutputStream out;
-    static Random RANDOM = new Random();
+    static final Random RANDOM = new Random();
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
@@ -182,7 +182,7 @@ public class Main {
 
                 if (insnNode.getOpcode() == Opcodes.LDC) {
                     LdcInsnNode ldc = (LdcInsnNode) insnNode;
-                    if (ldc.cst instanceof String || ldc.cst instanceof Integer || ldc.cst instanceof Float || (ldc.cst instanceof Long && ((Long) ldc.cst).intValue() == (Long) ldc.cst) || ldc.cst instanceof Double || ldc.cst instanceof Type) {
+                    if (!(ldc.cst instanceof Long) || ((Long) ldc.cst).intValue() == (Long) ldc.cst) {
                         int i = getNext(ldc.cst);
                         InsnList list = new InsnList();
                         list.add(new FieldInsnNode(Opcodes.GETSTATIC, "skill/if", "assert", "[Ljava/lang/Object;"));
@@ -224,8 +224,6 @@ public class Main {
 
     /**
      * There's no optimization, as Proguard should do this. Still added a Check in case something goes wrong.
-     *
-     * @param classNode
      */
     private static void optimizeCheck(ClassNode classNode) {
         for (MethodNode method : classNode.methods) {
@@ -260,8 +258,6 @@ public class Main {
 
     /**
      * add the Annotation @SideOnly(Side.CLIENT) to all classes
-     *
-     * @param classNode
      */
     private static void annotations(ClassNode classNode) {
         if (classNode.visibleAnnotations == null) {

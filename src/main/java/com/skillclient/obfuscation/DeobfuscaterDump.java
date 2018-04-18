@@ -7,12 +7,9 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Random;
 
 public class DeobfuscaterDump implements Opcodes {
-
-    static Base64.Encoder enc = Base64.getEncoder();
-    static Random random = new Random();
+    static final Base64.Encoder enc = Base64.getEncoder();
 
     public static byte[] dump() throws Exception {
         ClassWriter cw = new ClassWriter(0); // ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES
