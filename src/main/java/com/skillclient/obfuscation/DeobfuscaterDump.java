@@ -134,7 +134,7 @@ public class DeobfuscaterDump implements Opcodes {
                 if(o instanceof String) {
                     mv.visitLdcInsn(enc.encodeToString(cipher.doFinal(((String)o).getBytes())));
                     mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(Ljava/lang/String;)Ljava/lang/String;", false);
-                } else if(o instanceof Integer) {
+                } else if (o instanceof Integer || o instanceof Long) {
                     short a = (short) (random.nextInt(256) + 256);
                     int b = random.nextInt(Integer.MAX_VALUE/2) + Integer.MAX_VALUE/4;
                     long c = random.nextInt(Integer.MAX_VALUE/2) + Integer.MAX_VALUE/4;
@@ -142,7 +142,7 @@ public class DeobfuscaterDump implements Opcodes {
                     mv.visitIntInsn(SIPUSH, a);
                     mv.visitLdcInsn(b);
                     mv.visitLdcInsn(c);
-                    mv.visitLdcInsn(calcI(a, b, c, (int) o));
+                    mv.visitLdcInsn(calcI(a, b, c, o instanceof Integer ? (int) o : Long.valueOf((long) o).intValue()));
                     mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(IIJI)I", false);
                     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
                 } else if (o instanceof Float) {
