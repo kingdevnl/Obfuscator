@@ -182,7 +182,7 @@ public class Main {
                 if (insnNode.getOpcode() == Opcodes.LDC) {
                     LdcInsnNode ldc = (LdcInsnNode) insnNode;
                     // Only works when long could be integer
-                    if (ldc.cst instanceof String || ldc.cst instanceof Integer || ldc.cst instanceof Float || (ldc.cst instanceof Long && ((Long) ldc.cst).intValue() == (Long) ldc.cst)) {
+                    if (ldc.cst instanceof String || ldc.cst instanceof Integer || ldc.cst instanceof Float || (ldc.cst instanceof Long && ((Long) ldc.cst).intValue() == (Long) ldc.cst) || ldc.cst instanceof Double) {
                         int i = getNext(ldc.cst);
                         InsnList list = new InsnList();
                         list.add(new FieldInsnNode(Opcodes.GETSTATIC, "skill/if", "assert", "[Ljava/lang/Object;"));
@@ -195,6 +195,8 @@ public class Main {
                             list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "longValue", "()J", false));
                         else if (ldc.cst instanceof Float)
                             list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
+                        else if (ldc.cst instanceof Double)
+                            list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false));
                         method.instructions.insertBefore(insnNode, list);
                         method.instructions.remove(insnNode);
                     } else {

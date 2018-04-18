@@ -7,6 +7,7 @@ import org.objectweb.asm.Opcodes;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Random;
@@ -155,6 +156,10 @@ public class DeobfuscaterDump implements Opcodes {
                     mv.visitLdcInsn(calcF(a, b, c, (float) o));
                     mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(IIJI)F", false);
                     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
+                } else if (o instanceof Double) {
+                    mv.visitLdcInsn(new String(ByteBuffer.allocate(Double.BYTES).putDouble((Double) o).array()));
+                    mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(Ljava/lang/String;)D", false);
+                    mv.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
                 } else {
                     mv.visitLdcInsn(o);
                     System.out.println(o.getClass() + " " + o);
@@ -247,6 +252,22 @@ public class DeobfuscaterDump implements Opcodes {
             mv.visitLocalVariable("c", "J", null, l0, l1, 2);
             mv.visitLocalVariable("d", "I", null, l0, l1, 4);
             mv.visitMaxs(5, 5);
+            mv.visitEnd();
+        }
+        {
+            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "a", "(Ljava/lang/String;)D", null, null);
+            mv.visitCode();
+            Label l0 = new Label();
+            Label l1 = new Label();
+            mv.visitLabel(l0);
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "getBytes", "()[B", false);
+            mv.visitMethodInsn(INVOKESTATIC, "java/nio/ByteBuffer", "wrap", "([B)Ljava/nio/ByteBuffer;", false);
+            mv.visitMethodInsn(INVOKEVIRTUAL, "java/nio/ByteBuffer", "getDouble", "()D", false);
+            mv.visitInsn(DRETURN);
+            mv.visitLabel(l1);
+            mv.visitLocalVariable("a", "Ljava/lang/String;", null, l0, l1, 0);
+            mv.visitMaxs(2, 1);
             mv.visitEnd();
         }
 
