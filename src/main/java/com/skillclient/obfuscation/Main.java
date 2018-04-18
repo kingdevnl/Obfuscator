@@ -3,6 +3,7 @@ package com.skillclient.obfuscation;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.util.Textifier;
 
@@ -181,14 +182,19 @@ public class Main {
 
                 if (insnNode.getOpcode() == Opcodes.LDC) {
                     LdcInsnNode ldc = (LdcInsnNode) insnNode;
-                    // Only works when long could be integer
-                    if (ldc.cst instanceof String || ldc.cst instanceof Integer || ldc.cst instanceof Float || (ldc.cst instanceof Long && ((Long) ldc.cst).intValue() == (Long) ldc.cst) || ldc.cst instanceof Double) {
+                    if (ldc.cst instanceof String || ldc.cst instanceof Integer || ldc.cst instanceof Float || (ldc.cst instanceof Long && ((Long) ldc.cst).intValue() == (Long) ldc.cst) || ldc.cst instanceof Double || ldc.cst instanceof Type) {
                         int i = getNext(ldc.cst);
                         InsnList list = new InsnList();
                         list.add(new FieldInsnNode(Opcodes.GETSTATIC, "skill/if", "assert", "[Ljava/lang/Object;"));
                         list.add(new IntInsnNode(Opcodes.SIPUSH, (short) (i + 2)));
                         list.add(new InsnNode(Opcodes.AALOAD));
-                        list.add(new TypeInsnNode(Opcodes.CHECKCAST, (ldc.cst instanceof Long ? Integer.class : ldc.cst.getClass()).getName().replace('.', '/')));
+                        if (ldc.cst instanceof Long)
+                            list.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Integer"));
+                        else if (ldc.cst instanceof Type)
+                            list.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Class"));
+                        else
+                            list.add(new TypeInsnNode(Opcodes.CHECKCAST, ldc.cst.getClass().getName().replace('.', '/')));
+
                         if (ldc.cst instanceof Integer)
                             list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
                         else if (ldc.cst instanceof Long)
@@ -200,7 +206,7 @@ public class Main {
                         method.instructions.insertBefore(insnNode, list);
                         method.instructions.remove(insnNode);
                     } else {
-                        //System.out.println(ldc.cst.getClass() + " " + ldc.cst);
+                        System.out.println(classNode.name + " " + method.name + method.desc + " " + ldc.cst.getClass() + " " + ldc.cst);
                     }
                 }
             }

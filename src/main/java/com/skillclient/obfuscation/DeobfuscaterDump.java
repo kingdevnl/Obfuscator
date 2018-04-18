@@ -1,9 +1,6 @@
 package com.skillclient.obfuscation;
 
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -160,6 +157,8 @@ public class DeobfuscaterDump implements Opcodes {
                     mv.visitLdcInsn(new String(ByteBuffer.allocate(Double.BYTES).putDouble((Double) o).array()));
                     mv.visitMethodInsn(INVOKESTATIC, "skill/if", "a", "(Ljava/lang/String;)D", false);
                     mv.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
+                } else if (o instanceof Type) {
+                    mv.visitLdcInsn(o);
                 } else {
                     mv.visitLdcInsn(o);
                     System.out.println(o.getClass() + " " + o);
