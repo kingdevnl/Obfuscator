@@ -8,10 +8,7 @@ import org.objectweb.asm.tree.*;
 import org.objectweb.asm.util.Textifier;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -139,42 +136,34 @@ public class Main {
     }
 
     static List<Object> objects = new ArrayList<>();
+    static Map<Integer, Object> map = new HashMap<>();
+
+    static {
+        map.put(Opcodes.ICONST_M1, -1);
+        map.put(Opcodes.ICONST_0, 0);
+        map.put(Opcodes.ICONST_1, 1);
+        map.put(Opcodes.ICONST_2, 2);
+        map.put(Opcodes.ICONST_3, 3);
+        map.put(Opcodes.ICONST_4, 4);
+        map.put(Opcodes.ICONST_5, 5);
+        map.put(Opcodes.FCONST_0, 0F);
+        map.put(Opcodes.FCONST_1, 1F);
+        map.put(Opcodes.FCONST_2, 2F);
+        map.put(Opcodes.DCONST_0, 0D);
+        map.put(Opcodes.DCONST_1, 1D);
+        map.put(Opcodes.LCONST_0, 0L);
+        map.put(Opcodes.LCONST_1, 1L);
+    }
 
     private static void replaceConstants(ClassNode classNode) {
         for (MethodNode method : classNode.methods) {
             for (AbstractInsnNode insnNode : method.instructions.toArray()) {
                 {
                     LdcInsnNode n = null;
-                    if (insnNode.getOpcode() == Opcodes.ICONST_M1)
-                        n = new LdcInsnNode(-1);
-                    else if (insnNode.getOpcode() == Opcodes.ICONST_0)
-                        n = new LdcInsnNode(0);
-                    else if (insnNode.getOpcode() == Opcodes.ICONST_1)
-                        n = new LdcInsnNode(1);
-                    else if (insnNode.getOpcode() == Opcodes.ICONST_2)
-                        n = new LdcInsnNode(2);
-                    else if (insnNode.getOpcode() == Opcodes.ICONST_3)
-                        n = new LdcInsnNode(3);
-                    else if (insnNode.getOpcode() == Opcodes.ICONST_4)
-                        n = new LdcInsnNode(4);
-                    else if (insnNode.getOpcode() == Opcodes.ICONST_5)
-                        n = new LdcInsnNode(5);
+                    if (map.containsKey(insnNode.getOpcode()))
+                        n = new LdcInsnNode(map.get(insnNode.getOpcode()));
                     else if (insnNode.getOpcode() == Opcodes.SIPUSH || insnNode.getOpcode() == Opcodes.BIPUSH)
                         n = new LdcInsnNode(((IntInsnNode) insnNode).operand);
-                    else if (insnNode.getOpcode() == Opcodes.FCONST_0)
-                        n = new LdcInsnNode(0.0f);
-                    else if (insnNode.getOpcode() == Opcodes.FCONST_1)
-                        n = new LdcInsnNode(1.0f);
-                    else if (insnNode.getOpcode() == Opcodes.FCONST_2)
-                        n = new LdcInsnNode(2.0f);
-                    else if (insnNode.getOpcode() == Opcodes.DCONST_0)
-                        n = new LdcInsnNode(0D);
-                    else if (insnNode.getOpcode() == Opcodes.DCONST_1)
-                        n = new LdcInsnNode(1D);
-                    else if (insnNode.getOpcode() == Opcodes.LCONST_0)
-                        n = new LdcInsnNode(0L);
-                    else if (insnNode.getOpcode() == Opcodes.LCONST_1)
-                        n = new LdcInsnNode(1L);
                     if (n != null) {
                         method.instructions.set(insnNode, n);
                         insnNode = n;
