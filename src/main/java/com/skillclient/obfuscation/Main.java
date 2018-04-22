@@ -90,7 +90,7 @@ public class Main {
                             list.add(new InsnNode(Opcodes.IXOR));
                             break;
                         case 2:
-                            list.add(new LdcInsnNode(RANDOM.nextInt(Short.MAX_VALUE) * 2 + 1));
+                            list.add(new LdcInsnNode(RANDOM.nextInt(Short.MAX_VALUE) + 1));
                             list.add(new InsnNode(Opcodes.IMUL));
                             break;
                         case 3:
