@@ -41,6 +41,7 @@ public class Main {
                 ClassReader classReader = new ClassReader(data);
                 classReader.accept(classNode, 0);
 
+                booleans(classNode);
                 replaceConstants(classNode);
                 annotations(classNode);
                 accessCodes(classNode);
@@ -72,6 +73,39 @@ public class Main {
         }
         out.close();
         System.out.println("array size: " + objects.size());
+    }
+
+    private static void booleans(ClassNode classNode) {
+        for (MethodNode method : classNode.methods) {
+            for (AbstractInsnNode insnNode : method.instructions.toArray()) {
+                if ((insnNode instanceof MethodInsnNode && ((MethodInsnNode) insnNode).desc.endsWith("Z")) || (insnNode instanceof FieldInsnNode && ((FieldInsnNode) insnNode).desc.equals("Z"))) {
+                    InsnList list = new InsnList();
+                    switch (RANDOM.nextInt(4)) {
+                        case 0:
+                            list.add(new LdcInsnNode(RANDOM.nextInt(Short.MAX_VALUE) * 2 + 1));
+                            list.add(new InsnNode(Opcodes.IAND));
+                            break;
+                        case 1:
+                            list.add(new LdcInsnNode(0));
+                            list.add(new InsnNode(Opcodes.IXOR));
+                            break;
+                        case 2:
+                            list.add(new LdcInsnNode(RANDOM.nextInt(Short.MAX_VALUE) * 2 + 1));
+                            list.add(new InsnNode(Opcodes.IMUL));
+                            break;
+                        case 3:
+                            list.add(new LdcInsnNode(RANDOM.nextInt(7)));
+                            list.add(new InsnNode(Opcodes.ISHL));
+                            break;
+                    }
+
+                    if (insnNode.getOpcode() == Opcodes.PUTFIELD || insnNode.getOpcode() == Opcodes.PUTSTATIC)
+                        method.instructions.insertBefore(insnNode, list);
+                    else
+                        method.instructions.insert(insnNode, list);
+                }
+            }
+        }
     }
 
     private static void flow(ClassNode classNode) {
